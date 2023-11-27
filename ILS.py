@@ -1,82 +1,73 @@
 import random
 class RobotOptimizer:
     def __init__(self, initial_guess, constraints):
-        self.coordinates = initial_guess
-        self.constraints = constraints
+        self.coordinates = initial_guess    # initial guess
+        self.constraints = constraints      # set constraints
         self.best_score = float('inf')
+        self.best_neighbour_history = []  # Initialize neighbour history here
+        self.best_score_history = []      # Initialize score history here
 
-    def call_robot_control_function(self, coordinates):
-        # Replace this with your actual robot control function call
-        reprojection_error = random.uniform(0, 1)  # Mock output
-        total_time = random.uniform(0, 30)        # Mock output
+    def call_robot_control_function(self, coordinates):         
+        reprojection_error = random.uniform(0, 1)  
+        total_time = random.uniform(0, 30)        
         return reprojection_error, total_time
 
     def calculate_objective(self, reprojection_error, total_time):
         
-        return reprojection_error * 500 + total_time
+        return reprojection_error * 500 + total_time       # cost calculation
 
     def check_constraints(self, coordinates):
-        return all(self.constraints[dim][0] <= coord <= self.constraints[dim][1] for dim, coord in enumerate(coordinates))
+        return all(self.constraints[dim][0] <= coord <= self.constraints[dim][1] for dim, coord in enumerate(coordinates))     # verify constraints are satisfied 
 
-    def generate_neighbors(self, coordinates):
-        neighbors = []
+    def generate_neighbours(self, coordinates):
+        neighbours = []
         step_size = 0.5  # Define how much each coordinate can vary
 
         for i in range(len(coordinates)):
-            if coordinates[i] + step_size <= self.constraints[i][1]:
+            if coordinates[i] + step_size <= self.constraints[i][1]:          # increment and decrement various coordinates 
                 new_coord = coordinates.copy()
-                new_coord[i] += step_size
-                neighbors.append(new_coord)
+                new_coord[i] += step_size                                     
+                neighbours.append(new_coord)
 
             if coordinates[i] - step_size >= self.constraints[i][0]:
                 new_coord = coordinates.copy()
                 new_coord[i] -= step_size
-                neighbors.append(new_coord)
-        #print(neighbors)
+                neighbours.append(new_coord)
+        #print(neighbours)
 
-        return neighbors
+        return neighbours
 
     def optimize(self):
         for _ in range(300):  # Maximum of 300 trials
-            reprojection_error, total_time = self.call_robot_control_function(self.coordinates)
+            reprojection_error, total_time = self.call_robot_control_function(self.coordinates)        # extract required data and calculate score
             current_score = self.calculate_objective(reprojection_error, total_time)
 
-            best_neighbour_history = []
-            best_score_history = []
-
-            if current_score < self.best_score:
+            if current_score < self.best_score:                     # stor accordingly
                 self.best_score = current_score
-                #print(self.coordinates)
-                best_neighbour_history.append(self.coordinates)
-                best_score_history.append(self.best_score)
+                self.best_neighbour_history.append(self.coordinates.copy())  # Update history with a copy of coordinates
+                self.best_score_history.append(self.best_score)
 
-            neighbors = self.generate_neighbors(self.coordinates)
-            #print(neighbors)
-            best_neighbor = None
-            best_neighbor_score = float('inf')
+            neighbours = self.generate_neighbours(self.coordinates)              # generate neighbours
+            best_neighbour = None                                                # reset these vars
+            best_neighbour_score = float('inf')
 
-            for neighbor in neighbors:
-                if not self.check_constraints(neighbor):
+            for neighbour in neighbours:                                         # verify it fits the constraints
+                if not self.check_constraints(neighbour):
                     continue
 
-                reprojection_error, total_time = self.call_robot_control_function(neighbor)
-                neighbor_score = self.calculate_objective(reprojection_error, total_time)
+                reprojection_error, total_time = self.call_robot_control_function(neighbour)          # calculate score
+                neighbour_score = self.calculate_objective(reprojection_error, total_time)
 
+                if neighbour_score < best_neighbour_score:                      # compare the scores and store accordingly
+                    best_neighbour = neighbour 
+                    best_neighbour_score = neighbour_score
 
-                if neighbor_score < best_neighbor_score:
-                    best_neighbor = neighbor
-                    best_neighbor_score = neighbor_score
-
-            if best_neighbor_score < current_score:
-                self.coordinates = best_neighbor
-                if current_score - best_neighbor_score < 5:  # Convergence criteria
+            if best_neighbour_score < current_score:                            # compare the best of the iteration to the global best 
+                self.coordinates = best_neighbour
+                if current_score - best_neighbour_score < 5:  # Convergence criteria
                     break
-            
-            best_neighbour_history.append(best_neighbor)
-            best_score_history.append(best_neighbor_score)
+        print(self.best_neighbour_history)
 
-            print(best_neighbour_history)
-        
         return self.coordinates, self.best_score
 
 # Example usage
